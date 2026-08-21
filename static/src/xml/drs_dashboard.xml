@@ -2,26 +2,57 @@
 <templates xml:space="preserve">
     <t t-name="mrp_drs_production.DashboardTemplate" owl="1">
         <div class="o_drs_dashboard vh-100 overflow-auto">
-            <!-- Header -->
-            <div class="o_drs_header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-                <div>
-                    <h2 class="fw-bolder mb-1" style="color: #1e1b4b;">
-                        DRS Extrusion Control Center
-                    </h2>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small fw-semibold">Updated <t t-esc="state.lastUpdated"/></span>
+
+            <!-- TOP NAV BAR -->
+            <div class="d-flex justify-content-between align-items-center mb-5 mt-2 px-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bolder fs-5 shadow"
+                         style="width: 45px; height: 45px;">
+                        R
                     </div>
+                    <h2 class="fw-bolder mb-0" style="color: #111827; letter-spacing: -0.03em;">Good Evening Rania!</h2>
                 </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-light border-0 shadow-sm fw-bold btn-sm rounded-pill px-3"
-                            t-on-click="() => this.openFilteredWork([], 'All Production')">
-                        <i class="fa fa-list me-1 text-primary"/>View All
-                    </button>
+
+                <div class="d-flex gap-4 align-items-center">
+                    <!-- Functional Quick Range Dropdown -->
+                    <div class="dropdown">
+                        <button class="bg-white rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-3 border-0 dropdown-toggle clickable"
+                                type="button" data-bs-toggle="dropdown">
+                            <span class="text-muted small fw-semibold">Choose</span>
+                            <span class="fw-bold small">
+                                <t t-if="state.filters.quickRange === 'today'">Today</t>
+                                <t t-elif="state.filters.quickRange === 'week'">Last 7 Days</t>
+                                <t t-elif="state.filters.quickRange === 'month'">This Month</t>
+                                <t t-elif="state.filters.quickRange === 'all'">All Time</t>
+                                <t t-else="">Custom</t>
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu border-0 shadow rounded-4 mt-2">
+                            <li><a class="dropdown-item fw-semibold py-2" href="#" t-on-click.prevent="() => this.setQuickRange('today')">Today</a></li>
+                            <li><a class="dropdown-item fw-semibold py-2" href="#" t-on-click.prevent="() => this.setQuickRange('week')">Last 7 Days</a></li>
+                            <li><a class="dropdown-item fw-semibold py-2" href="#" t-on-click.prevent="() => this.setQuickRange('month')">This Month</a></li>
+                            <li><a class="dropdown-item fw-semibold py-2" href="#" t-on-click.prevent="() => this.setQuickRange('all')">All Time</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Functional App Icons -->
+                    <div class="bg-orange text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm clickable"
+                         style="width: 42px; height: 42px;" t-on-click="openDiscuss">
+                        <i class="fa fa-comments"/>
+                    </div>
+                    <div class="bg-transparent rounded-circle d-flex align-items-center justify-content-center clickable"
+                         style="width: 42px; height: 42px;" t-on-click="showNotification">
+                        <i class="fa fa-bell-o text-dark fs-5"/>
+                    </div>
+                    <div class="bg-transparent rounded-circle d-flex align-items-center justify-content-center clickable"
+                         style="width: 42px; height: 42px;" t-on-click="openMyProfile">
+                        <i class="fa fa-user-o text-dark fs-5"/>
+                    </div>
                 </div>
             </div>
 
             <!-- Filter Bar -->
-            <div class="o_drs_filterbar d-flex flex-wrap align-items-center gap-3 mb-4">
+            <div class="o_drs_filterbar d-flex flex-wrap align-items-center gap-3 mb-4 px-2">
                 <div class="btn-group btn-group-sm shadow-sm rounded-pill overflow-hidden bg-white" role="group">
                     <button t-attf-class="btn border-0 {{ state.filters.quickRange === 'today' ? 'active-tab' : 'text-muted' }}"
                             t-on-click="() => this.setQuickRange('today')">Today</button>
@@ -59,7 +90,7 @@
 
             <!-- LIVE ALERTS BANNER -->
             <t t-if="state.activeAlerts.length > 0">
-                <div class="alert alert-danger d-flex align-items-center fw-bold border-0 shadow-sm mb-4 o_drs_alert_banner rounded-4"
+                <div class="alert alert-danger d-flex align-items-center fw-bold border-0 shadow-sm mb-4 o_drs_alert_banner rounded-4 mx-2"
                      role="alert">
                     <i class="fa fa-exclamation-triangle fa-lg me-3 pulse-alert-icon"/>
                     <div>
@@ -70,165 +101,215 @@
                 </div>
             </t>
 
-            <!-- STATS & ANALYTICS: VERTICAL CARDS (Matching Reference Image) -->
-            <div class="row g-4 mb-4">
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-primary-subtle text-primary"><i class="fa fa-balance-scale"/></div>
-                        <div class="o_drs_kpi_label">Production Today</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.totalWeight"/>
-                            <span class="o_drs_kpi_unit">kg</span></div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-success-subtle text-success"><i class="fa fa-check-circle"/></div>
-                        <div class="o_drs_kpi_label">Quality Score</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.qualityScore"/>
-                            <span class="o_drs_kpi_unit">%</span></div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-purple-subtle text-purple"><i class="fa fa-cogs"/></div>
-                        <div class="o_drs_kpi_label">Active Machines</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.activeMachines"/></div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-info-subtle text-info"><i class="fa fa-cubes"/></div>
-                        <div class="o_drs_kpi_label">Rolls Produced</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.totalRolls"/></div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-warning-subtle text-warning"><i class="fa fa-pie-chart"/></div>
-                        <div class="o_drs_kpi_label">Avg Roll Weight</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.avgWeight"/>
-                            <span class="o_drs_kpi_unit">kg</span></div>
-                    </div>
-                </div>
-                <div class="col-xl-2 col-md-4 col-sm-6">
-                    <div class="o_drs_kpi_card">
-                        <div class="o_drs_kpi_icon bg-danger-subtle text-danger"><i class="fa fa-arrows-h"/></div>
-                        <div class="o_drs_kpi_label">Total Length</div>
-                        <div class="o_drs_kpi_value"><t t-esc="state.kpi.totalLength"/>
-                            <span class="o_drs_kpi_unit">m</span></div>
-                    </div>
-                </div>
-            </div>
+            <div class="row g-5 px-2">
+                <!-- LEFT COLUMN -->
+                <div class="col-xl-6">
+                    <h5 class="fw-bold mb-4" style="color: #374151;">Stats &amp; Analytics</h5>
 
-            <!-- LIVE PRODUCTION TREND -->
-            <div class="o_drs_panel mb-4">
-                <h6 class="o_drs_panel_title"><i class="fa fa-line-chart me-2 text-primary"/>Live Production Output
-                    Trend</h6>
-                <t t-if="state.hasData">
-                    <div class="o_drs_chart_wrap" style="height: 280px;"><canvas t-ref="trendChart"/></div>
-                </t>
-                <t t-else="">
-                    <div class="o_drs_empty_state">
-                        <i class="fa fa-bar-chart"/>
-                        <strong>No production data yet</strong>
-                        <span>Live output will appear here automatically</span>
-                    </div>
-                </t>
-            </div>
-
-            <!-- ROW 2: Machine Status & Temperature -->
-            <div class="row g-4 mb-4">
-                <div class="col-lg-5">
-                    <div class="o_drs_panel h-100">
-                        <h6 class="o_drs_panel_title"><i class="fa fa-server me-2 text-primary"/>Machine Status</h6>
-                        <t t-if="state.machineList.length > 0">
-                            <t t-foreach="state.machineList" t-as="m" t-key="m.name">
-                                <div t-attf-class="machine_status_row {{ m.hasAlert ? 'alert-border' : '' }}">
-                                    <div class="d-flex align-items-center me-auto">
-                                        <div t-attf-class="machine_status_dot {{ m.hasAlert ? 'alert' : '' }}"/>
-                                        <div class="fw-bold">M-<t t-esc="m.name"/></div>
-                                    </div>
-                                    <div class="text-end small">
-                                        <span class="badge bg-light text-dark border me-2"><t t-esc="m.weight"/>
-                                            kg</span>
-                                        <span class="text-muted">Shift: <t t-esc="m.shift"/></span>
-                                    </div>
+                    <!-- 4 VERTICAL CARDS (Dynamic Trends) -->
+                    <div class="row g-3 mb-5">
+                        <div class="col-md-3 col-6">
+                            <div class="saas-v-card clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Production History', 'mrp.drs.production')">
+                                <div class="icon-box bg-purple"><i class="fa fa-bolt"/></div>
+                                <div class="saas-label">Production</div>
+                                <div class="saas-value"><t t-esc="state.kpi.totalWeight"/></div>
+                                <div t-attf-class="saas-trend {{ state.kpi.trends.production &gt;= 0 ? 'text-success' : 'text-danger' }}">
+                                    <i t-attf-class="fa {{ state.kpi.trends.production &gt;= 0 ? 'fa-caret-up' : 'fa-caret-down' }}"/>
+                                    <t t-esc="Math.abs(state.kpi.trends.production)"/>%
                                 </div>
-                            </t>
-                        </t>
-                        <t t-else="">
-                            <div class="o_drs_empty_state">
-                                <i class="fa fa-power-off"/>
-                                <strong>All machines idle</strong>
-                                <span>Status will update when production begins</span>
                             </div>
-                        </t>
-                    </div>
-                </div>
-                <div class="col-lg-7">
-                    <div class="o_drs_panel h-100">
-                        <h6 class="o_drs_panel_title"><i class="fa fa-thermometer-half me-2 text-primary"/>Set vs Actual
-                            Temperature</h6>
-                        <t t-if="state.hasData">
-                            <div class="o_drs_chart_wrap" style="height: 240px;"><canvas t-ref="qualityChart"/></div>
-                        </t>
-                        <t t-else="">
-                            <div class="o_drs_empty_state">
-                                <i class="fa fa-line-chart"/>
-                                <strong>No temperature logs</strong>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="saas-v-card clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Quality Metrics', 'mrp.drs.production')">
+                                <div class="icon-box bg-dark-blue"><i class="fa fa-arrows-alt"/></div>
+                                <div class="saas-label">Quality</div>
+                                <div class="saas-value"><t t-esc="state.kpi.qualityScore"/>%</div>
+                                <div t-attf-class="saas-trend {{ state.kpi.trends.quality &gt;= 0 ? 'text-success' : 'text-danger' }}">
+                                    <i t-attf-class="fa {{ state.kpi.trends.quality &gt;= 0 ? 'fa-caret-up' : 'fa-caret-down' }}"/>
+                                    <t t-esc="Math.abs(state.kpi.trends.quality)"/>%
+                                </div>
                             </div>
-                        </t>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="saas-v-card clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Active Machines', 'mrp.drs.production')">
+                                <div class="icon-box bg-orange-light text-orange"><i class="fa fa-cogs"/></div>
+                                <div class="saas-label">Machines</div>
+                                <div class="saas-value"><t t-esc="state.kpi.activeMachines"/></div>
+                                <div t-attf-class="saas-trend {{ state.kpi.trends.machines &gt;= 0 ? 'text-success' : 'text-danger' }}">
+                                    <i t-attf-class="fa {{ state.kpi.trends.machines &gt;= 0 ? 'fa-caret-up' : 'fa-caret-down' }}"/>
+                                    <t t-esc="Math.abs(state.kpi.trends.machines)"/>%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="saas-v-card clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Average Weight Data', 'mrp.drs.production')">
+                                <div class="icon-box bg-orange-light text-orange"><i class="fa fa-clock-o"/></div>
+                                <div class="saas-label">Avg Weight</div>
+                                <div class="saas-value"><t t-esc="state.kpi.avgWeight"/></div>
+                                <div t-attf-class="saas-trend {{ state.kpi.trends.avgWeight &gt;= 0 ? 'text-success' : 'text-danger' }}">
+                                    <i t-attf-class="fa {{ state.kpi.trends.avgWeight &gt;= 0 ? 'fa-caret-up' : 'fa-caret-down' }}"/>
+                                    <t t-esc="Math.abs(state.kpi.trends.avgWeight)"/>%
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- ROW 3: Shift Performance & Recent -->
-            <div class="row g-4 mb-4">
-                <div class="col-lg-4">
-                    <div class="o_drs_panel h-100">
-                        <h6 class="o_drs_panel_title"><i class="fa fa-clock-o me-2 text-primary"/>Shift Performance</h6>
-                        <t t-if="state.hasData">
-                            <div class="o_drs_chart_wrap" style="height: 220px;"><canvas t-ref="shiftChart"/></div>
-                        </t>
-                        <t t-else="">
-                            <div class="o_drs_empty_state"><i class="fa fa-pie-chart"/>
-                                <strong>No shift data</strong></div>
-                        </t>
+                    <!-- 4 HORIZONTAL SERVICE CARDS -->
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="saas-h-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #111827;">Avg Spray Weight</h6>
+                                        <p class="text-muted saas-subtext mb-0">Average intermediate weight calculated from F11/F12</p>
+                                    </div>
+                                    <div class="h-icon-box bg-dark-blue-light text-dark-blue"><i class="fa fa-balance-scale"/></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <h5 class="fw-bolder mb-0"><t t-esc="state.kpi.avgSprayWeight"/>
+                                        <span class="fs-6 text-muted fw-bold">kg</span></h5>
+                                    <button class="btn btn-light btn-sm rounded-pill saas-btn clickable"
+                                            t-on-click="() => this.openFilteredWork([['average_spray_weight', '&gt;', 0]], 'Spray Weight Logs', 'mrp.drs.production')">
+                                        View Detail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="saas-h-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #111827;">Machine Faults</h6>
+                                        <p class="text-muted saas-subtext mb-0">Total logs with active operational notes or breakdowns</p>
+                                    </div>
+                                    <div class="h-icon-box bg-orange-light text-orange"><i class="fa fa-wrench"/></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <h5 class="fw-bolder mb-0"><t t-esc="state.kpi.reportedFaults"/>
+                                        <span class="fs-6 text-muted fw-bold">/Logs</span></h5>
+                                    <button class="btn btn-light btn-sm rounded-pill saas-btn clickable"
+                                            t-on-click="() => this.openFilteredWork([['notes', '!=', False]], 'Reported Faults', 'mrp.drs.production')">
+                                        View Detail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="saas-h-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #111827;">Average Line Speed</h6>
+                                        <p class="text-muted saas-subtext mb-0">Aggregated operating line speed across machines</p>
+                                    </div>
+                                    <div class="h-icon-box bg-purple-light text-purple"><i class="fa fa-forward"/></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <h5 class="fw-bolder mb-0"><t t-esc="state.kpi.avgLineSpeed"/>
+                                        <span class="fs-6 text-muted fw-bold">m/min</span></h5>
+                                    <button class="btn btn-light btn-sm rounded-pill saas-btn clickable"
+                                            t-on-click="() => this.openFilteredWork([['line_speed', '&gt;', 0]], 'Line Speed Logs', 'mrp.drs.production')">
+                                        View Detail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="saas-h-card active-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #111827;">Total Output Rolls</h6>
+                                        <p class="text-muted saas-subtext mb-0">Total finished production rolls recorded</p>
+                                    </div>
+                                    <div class="h-icon-box text-orange border border-warning bg-transparent"><i class="fa fa-shield"/></div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <h5 class="fw-bolder mb-0" style="color: #111827;"><t t-esc="state.kpi.totalRolls"/></h5>
+                                    <button class="btn bg-orange text-white btn-sm rounded-pill fw-bold border-0 px-3 shadow-sm saas-btn clickable"
+                                            t-on-click="() => this.openFilteredWork([], 'All Production Records', 'mrp.drs.production')">
+                                        View Detail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-8">
-                    <div class="o_drs_panel h-100">
-                        <h6 class="o_drs_panel_title"><i class="fa fa-history me-2 text-primary"/>Recent Production</h6>
-                        <t t-if="state.recent.length > 0">
-                            <div class="table-responsive">
-                                <table class="table table-borderless o_drs_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Roll #</th>
-                                            <th>Machine</th>
-                                            <th>Shift</th>
-                                            <th class="text-end">Weight</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-foreach="state.recent" t-as="rec" t-key="rec.id">
-                                            <tr style="cursor: pointer;" t-on-click="() => this.openRecord(rec.id)">
-                                                <td class="fw-bold text-dark"><t t-esc="rec.output_roll_number"/></td>
-                                                <td><span class="badge rounded-pill bg-light text-dark border px-2 py-1">M-<t
-                                                        t-esc="rec.machine_number"/></span></td>
-                                                <td class="text-capitalize text-muted fw-semibold"><t t-esc="rec.shift"/></td>
-                                                <td class="text-end fw-bolder text-dark"><t t-esc="rec.final_weight"/>
-                                                    kg</td>
-                                            </tr>
-                                        </t>
-                                    </tbody>
-                                </table>
-                            </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="col-xl-6">
+                    <div class="saas-chart-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bolder" style="color: #111827;">Average Monthly Production</h6>
+                            <span class="text-muted small fw-semibold">2026 <i class="fa fa-chevron-down ms-1"/></span>
+                        </div>
+                        <t t-if="state.hasData">
+                            <div style="height: 250px;"><canvas t-ref="trendChart"/></div>
                         </t>
                         <t t-else="">
-                            <div class="o_drs_empty_state"><i class="fa fa-inbox"/>
-                                <strong>No recent activity</strong></div>
+                            <div class="o_drs_empty_state" style="height: 250px;">No data</div>
                         </t>
+                    </div>
+
+                    <!-- 4 MINI STAT BOXES -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="saas-mini-stat clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Length Records', 'mrp.drs.production')">
+                                <i class="fa fa-thumbs-up text-muted fs-5"/>
+                                <span class="text-muted ms-3 fw-semibold">Total Length</span>
+                                <span class="ms-auto fw-bold text-dark"><t t-esc="state.kpi.totalLength"/></span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="saas-mini-stat clickable"
+                                 t-on-click="() => this.openFilteredWork([], 'Machine Logs', 'mrp.drs.production')">
+                                <i class="fa fa-paperclip text-muted fs-5"/>
+                                <span class="text-muted ms-3 fw-semibold">Attachments</span>
+                                <span class="ms-auto fw-bold text-dark"><t t-esc="state.machineList.length"/></span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="saas-mini-stat clickable"
+                                 t-on-click="() => this.openFilteredWork([['is_drs_supervisor', '=', true]], 'Supervisors &amp; Technicians', 'hr.employee')">
+                                <i class="fa fa-users text-muted fs-5"/>
+                                <span class="text-muted ms-3 fw-semibold">Team Members</span>
+                                <span class="ms-auto fw-bold text-dark"><t t-esc="state.supervisorOptions.length"/></span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="saas-mini-stat clickable"
+                                 t-on-click="() => this.openFilteredWork([['notes', '!=', False]], 'Production Faults', 'mrp.drs.production')">
+                                <i class="fa fa-key text-muted fs-5"/>
+                                <span class="text-muted ms-3 fw-semibold">Fault Reports</span>
+                                <span class="ms-auto fw-bold text-dark"><t t-esc="state.kpi.reportedFaults"/></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2 BOTTOM MINI CHARTS -->
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="saas-chart-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bolder mb-0"
+                                        style="font-size: 14px; color: #111827;">Shift Status</h6>
+                                    <span class="badge bg-danger-subtle text-danger border-0 rounded-pill px-3 py-1">On Track</span>
+                                </div>
+                                <div style="height: 60px;"><canvas t-ref="shiftChart"/></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="saas-chart-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bolder mb-0" style="font-size: 14px; color: #111827;">Temp Status</h6>
+                                    <span class="badge bg-danger-subtle text-danger border-0 rounded-pill px-3 py-1">On Track</span>
+                                </div>
+                                <div style="height: 60px;"><canvas t-ref="qualityChart"/></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

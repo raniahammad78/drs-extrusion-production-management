@@ -1,6 +1,6 @@
 {
     'name': 'DRS Extrusion Production Management',
-    'version': '18.0.1.3.0',
+    'version': '18.0.1.3.2',
     'sequence': 1,
     'summary': 'Manage Daily DRS Machine Extrusion, Personnel, and Dashboard',
     'description': """
@@ -12,6 +12,7 @@
     'author': 'Your Company',
     'depends': ['base', 'hr', 'mrp', 'web'],
     'data': [
+        'security/drs_security.xml',
         'security/ir.model.access.csv',
         'views/drs_dashboard_action.xml',
         'wizard/drs_excel_wizard_views.xml',

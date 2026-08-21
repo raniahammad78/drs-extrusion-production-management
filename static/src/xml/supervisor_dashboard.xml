@@ -1,5 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+
+    <!-- 1. SUB-TEMPLATE: Extracted to handle the card rendering safely in OWL -->
+    <t t-name="mrp_drs_production.SupervisorCardList" owl="1">
+        <div class="row g-4">
+            <t t-foreach="shift_group" t-as="sup" t-key="sup.id">
+                <div class="col-md-6 col-lg-4">
+                    <div class="sup-card p-4 h-100" style="cursor: pointer;"
+                         t-on-click="() => this.openSupervisorWork(sup.id)">
+
+                        <div class="d-flex align-items-center mb-4">
+                            <t t-if="sup.id !== 0">
+                                <img t-attf-src="/web/image?model=hr.employee&amp;id={{sup.id}}&amp;field=avatar_128"
+                                     class="sup-avatar me-3" alt="Avatar"/>
+                            </t>
+                            <t t-else="">
+                                <div class="sup-avatar-placeholder me-3"><i class="fa fa-user-secret"/></div>
+                            </t>
+
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1"><t t-esc="sup.name"/></h5>
+                                <span class="badge bg-light text-dark border">Total: <t t-esc="sup.totalRolls"/>
+                                    Rolls</span>
+                                <span class="badge bg-light text-primary border ms-1"><t t-esc="sup.totalWeight"/>
+                                    kg</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-light rounded-3 p-3 border">
+                            <h6 class="small fw-bold text-muted text-uppercase mb-3"><i class="fa fa-cogs me-1"/>
+                                Linked Machines Output</h6>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="machine-badge bg-primary text-white me-2">M-311</span>
+                                    <span class="small fw-bold"><t t-esc="sup.m311.rolls"/>
+                                        Rolls</span>
+                                </div>
+                                <span class="fw-bold text-dark"><t t-esc="sup.m311.weight"/>
+                                    kg</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 6px;">
+                                <div class="progress-bar bg-primary"
+                                     t-attf-style="width: #{sup.totalWeight > 0 ? (sup.m311.weight / sup.totalWeight) * 100 : 0}%"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="machine-badge bg-info text-white me-2">M-312</span>
+                                    <span class="small fw-bold"><t t-esc="sup.m312.rolls"/>
+                                        Rolls</span>
+                                </div>
+                                <span class="fw-bold text-dark"><t t-esc="sup.m312.weight"/>
+                                    kg</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-info"
+                                     t-attf-style="width: #{sup.totalWeight > 0 ? (sup.m312.weight / sup.totalWeight) * 100 : 0}%"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- 2. MAIN TEMPLATE -->
     <t t-name="mrp_drs_production.SupervisorDashboardTemplate" owl="1">
         <style>
             .sup-bg { background-color: #f8f9fa; color: #344767; }
@@ -11,6 +78,7 @@
             .nav-tabs .nav-link { color: #6c757d; font-weight: 600; border-radius: 8px 8px 0 0; border: none; border-bottom: 3px solid transparent; padding: 12px 24px; cursor: pointer; }
             .nav-tabs .nav-link.active { color: #005b9f; background-color: transparent; border-bottom: 3px solid #005b9f; }
             .form-corporate { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #e9ecef; }
+            .shift-header { border-left: 4px solid #005b9f; padding-left: 12px; margin-top: 30px; margin-bottom: 20px; font-weight: 700; color: #344767; }
         </style>
 
         <div class="vh-100 overflow-auto sup-bg p-4">
@@ -45,65 +113,48 @@
                 </li>
             </ul>
 
-            <!-- Tab Content 1: Overview Grid -->
-            <div t-if="state.activeTab === 'overview'" class="row g-4">
-                <t t-foreach="state.supervisors" t-as="sup" t-key="sup.id">
-                    <div class="col-md-6 col-lg-4">
-                        <div class="sup-card p-4 h-100" style="cursor: pointer;"
-                             t-on-click="() => this.openSupervisorWork(sup.id)">
+            <!-- Tab Content 1: Overview Grid by Shift -->
+            <div t-if="state.activeTab === 'overview'">
 
-                            <div class="d-flex align-items-center mb-4">
-                                <t t-if="sup.id !== 0">
-                                    <img t-attf-src="/web/image?model=hr.employee&amp;id={{sup.id}}&amp;field=avatar_128"
-                                         class="sup-avatar me-3" alt="Avatar"/>
-                                </t>
-                                <t t-else="">
-                                    <div class="sup-avatar-placeholder me-3"><i class="fa fa-user-secret"/></div>
-                                </t>
+                <!-- First Shift Section -->
+                <t t-if="state.shiftFirst.length > 0">
+                    <h4 class="shift-header"><i class="fa fa-sun-o me-2 text-warning"/>
+                        First Shift</h4>
+                    <t t-call="mrp_drs_production.SupervisorCardList">
+                        <t t-set="shift_group" t-value="state.shiftFirst"/>
+                    </t>
+                </t>
 
-                                <div>
-                                    <h5 class="fw-bold text-dark mb-1"><t t-esc="sup.name"/></h5>
-                                    <span class="badge bg-light text-dark border">Total: <t t-esc="sup.totalRolls"/>
-                                        Rolls</span>
-                                    <span class="badge bg-light text-primary border ms-1"><t t-esc="sup.totalWeight"/>
-                                        kg</span>
-                                </div>
-                            </div>
+                <!-- Second Shift Section -->
+                <t t-if="state.shiftSecond.length > 0">
+                    <h4 class="shift-header"><i class="fa fa-moon-o me-2 text-primary"/>
+                        Second Shift</h4>
+                    <t t-call="mrp_drs_production.SupervisorCardList">
+                        <t t-set="shift_group" t-value="state.shiftSecond"/>
+                    </t>
+                </t>
 
-                            <div class="bg-light rounded-3 p-3 border">
-                                <h6 class="small fw-bold text-muted text-uppercase mb-3"><i class="fa fa-cogs me-1"/>
-                                    Linked Machines Output</h6>
+                <!-- Both / Floater Shift Section -->
+                <t t-if="state.shiftBoth.length > 0">
+                    <h4 class="shift-header"><i class="fa fa-exchange me-2 text-success"/>
+                        Cross-Shift (Floaters)</h4>
+                    <t t-call="mrp_drs_production.SupervisorCardList">
+                        <t t-set="shift_group" t-value="state.shiftBoth"/>
+                    </t>
+                </t>
 
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="d-flex align-items-center">
-                                        <span class="machine-badge bg-primary text-white me-2">M-311</span>
-                                        <span class="small fw-bold"><t t-esc="sup.m311.rolls"/>
-                                            Rolls</span>
-                                    </div>
-                                    <span class="fw-bold text-dark"><t t-esc="sup.m311.weight"/>
-                                        kg</span>
-                                </div>
-                                <div class="progress mb-3" style="height: 6px;">
-                                    <div class="progress-bar bg-primary"
-                                         t-attf-style="width: #{sup.totalWeight > 0 ? (sup.m311.weight / sup.totalWeight) * 100 : 0}%"></div>
-                                </div>
+                <!-- Unassigned Data (Always shows at the bottom if it exists) -->
+                <t t-if="state.unassignedData">
+                    <h4 class="shift-header border-secondary text-secondary"><i class="fa fa-question-circle me-2"/>
+                        Unassigned Logs</h4>
+                    <t t-call="mrp_drs_production.SupervisorCardList">
+                        <t t-set="shift_group" t-value="[state.unassignedData]"/>
+                    </t>
+                </t>
 
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="d-flex align-items-center">
-                                        <span class="machine-badge bg-info text-white me-2">M-312</span>
-                                        <span class="small fw-bold"><t t-esc="sup.m312.rolls"/>
-                                            Rolls</span>
-                                    </div>
-                                    <span class="fw-bold text-dark"><t t-esc="sup.m312.weight"/>
-                                        kg</span>
-                                </div>
-                                <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar bg-info"
-                                         t-attf-style="width: #{sup.totalWeight > 0 ? (sup.m312.weight / sup.totalWeight) * 100 : 0}%"></div>
-                                </div>
-                            </div>
-
-                        </div>
+                <t t-if="state.shiftFirst.length === 0 and state.shiftSecond.length === 0 and state.shiftBoth.length === 0">
+                    <div class="alert alert-info text-center mt-5">
+                        No supervisors found. Add one using the "Add New Supervisor" tab!
                     </div>
                 </t>
             </div>
@@ -129,10 +180,21 @@
                                        t-model="state.newSup.name" placeholder="e.g. Ahmed Ali" required="1"/>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold text-secondary small text-uppercase">Job Position</label>
-                                <input type="text" class="form-control bg-light" t-model="state.newSup.job_title"
-                                       placeholder="Production Supervisor"/>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-secondary small text-uppercase">Job Position</label>
+                                    <input type="text" class="form-control bg-light" t-model="state.newSup.job_title"
+                                           placeholder="Production Supervisor"/>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-secondary small text-uppercase">Assigned Shift <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select bg-light" t-model="state.newSup.drs_shift" required="1">
+                                        <option value="first">First Shift</option>
+                                        <option value="second">Second Shift</option>
+                                        <option value="both">Both Shifts (Floater)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="row">

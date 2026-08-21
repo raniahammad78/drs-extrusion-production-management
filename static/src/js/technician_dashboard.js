@@ -10,9 +10,17 @@ export class TechnicianDashboard extends Component {
         this.notification = useService("notification");
 
         this.state = useState({
-            technicians: [],
+            shiftFirst: [],
+            shiftSecond: [],
+            shiftBoth: [],
             activeTab: 'overview',
-            newTech: { name: '', job_title: 'Extrusion Technician', work_email: '', work_phone: '' }
+            newTech: {
+                name: '',
+                job_title: 'Extrusion Technician',
+                work_email: '',
+                work_phone: '',
+                drs_shift: 'first' // Added default shift
+            }
         });
 
         onWillStart(async () => {
@@ -21,11 +29,11 @@ export class TechnicianDashboard extends Component {
     }
 
     async fetchData() {
-        // Fetch ONLY employees flagged as Technicians
+        // Fetch employees and include their assigned shift
         const employees = await this.orm.searchRead(
             "hr.employee",
             [["is_drs_technician", "=", true]],
-            ["id", "name"]
+            ["id", "name", "drs_shift"]
         );
 
         let techMap = {};
@@ -33,6 +41,7 @@ export class TechnicianDashboard extends Component {
             techMap[emp.id] = {
                 id: emp.id,
                 name: emp.name,
+                shift: emp.drs_shift || 'both', // default to both if missing
                 m311: { weight: 0, rolls: 0 },
                 m312: { weight: 0, rolls: 0 },
                 totalWeight: 0,
@@ -67,10 +76,21 @@ export class TechnicianDashboard extends Component {
             }
         }
 
-        this.state.technicians = Object.values(techMap).sort((a, b) => {
-            if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight;
-            return a.name.localeCompare(b.name);
+        // Group into distinct arrays based on the shift
+        let first = [], second = [], both = [];
+
+        Object.values(techMap).forEach(tech => {
+            tech.totalWeight = Math.round(tech.totalWeight * 100) / 100;
+            if (tech.shift === 'first') first.push(tech);
+            else if (tech.shift === 'second') second.push(tech);
+            else both.push(tech);
         });
+
+        const sortFunc = (a, b) => b.totalWeight - a.totalWeight || a.name.localeCompare(b.name);
+
+        this.state.shiftFirst = first.sort(sortFunc);
+        this.state.shiftSecond = second.sort(sortFunc);
+        this.state.shiftBoth = both.sort(sortFunc);
     }
 
     setTab(tabName) {
@@ -86,17 +106,18 @@ export class TechnicianDashboard extends Component {
         }
 
         try {
-            // Apply the 'is_drs_technician: true' flag automatically
+            // Apply the 'is_drs_technician: true' and the shift flag automatically
             await this.orm.create("hr.employee", [{
                 name: this.state.newTech.name,
                 job_title: this.state.newTech.job_title,
                 work_email: this.state.newTech.work_email,
                 work_phone: this.state.newTech.work_phone,
+                drs_shift: this.state.newTech.drs_shift, // Save the selected shift
                 is_drs_technician: true
             }]);
 
             this.notification.add("New Technician added successfully!", { type: "success" });
-            this.state.newTech = { name: '', job_title: 'Extrusion Technician', work_email: '', work_phone: '' };
+            this.state.newTech = { name: '', job_title: 'Extrusion Technician', work_email: '', work_phone: '', drs_shift: 'first' };
 
             await this.fetchData();
             this.state.activeTab = 'overview';

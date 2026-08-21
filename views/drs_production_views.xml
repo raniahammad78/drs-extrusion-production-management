@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ROOT MENU: Required for the sub-menu at the bottom to attach to -->
+    <menuitem id="menu_mrp_drs_root" name="DRS Extrusion" sequence="10"/>
+
+    <!-- List View -->
     <record id="view_mrp_drs_production_list" model="ir.ui.view">
         <field name="name">mrp.drs.production.list</field>
         <field name="model">mrp.drs.production</field>
@@ -15,6 +19,7 @@
         </field>
     </record>
 
+    <!-- Form View -->
     <record id="view_mrp_drs_production_form" model="ir.ui.view">
         <field name="name">mrp.drs.production.form</field>
         <field name="model">mrp.drs.production</field>
@@ -55,8 +60,11 @@
                                 -
                                 <field name="time_to" widget="float_time"/>
                             </div>
-                            <field name="supervisor_id"/>
-                            <field name="technician_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                            <!-- Dynamic domains to filter based on the selected shift -->
+                            <field name="supervisor_id"
+                                   domain="[('is_drs_supervisor', '=', True), '|', ('drs_shift', '=', shift), ('drs_shift', '=', 'both')]"/>
+                            <field name="technician_ids" widget="many2many_tags" options="{'color_field': 'color'}"
+                                   domain="[('is_drs_technician', '=', True), '|', ('drs_shift', '=', shift), ('drs_shift', '=', 'both')]"/>
                         </group>
                         <group string="Product &amp; Material Specifications">
                             <field name="input_roll_number"/>
@@ -72,6 +80,7 @@
                     <notebook>
                         <page string="Extruder Readings (قراءات الاكسترودر)">
                             <field name="extruder_line_ids">
+                                <!-- Odoo 18 Sub-List -->
                                 <list editable="bottom" limit="40" decoration-danger="is_temp_warning == True">
                                     <field name="extruder_name"/>
                                     <field name="zone"/>
@@ -147,6 +156,7 @@
         </field>
     </record>
 
+    <!-- Server Action for Excel Export -->
     <record id="action_export_excel_multi" model="ir.actions.server">
         <field name="name">Print Excel Report</field>
         <field name="model_id" ref="model_mrp_drs_production"/>
@@ -158,12 +168,14 @@
         </field>
     </record>
 
+    <!-- Window Action -->
     <record id="action_mrp_drs_production" model="ir.actions.act_window">
         <field name="name">DRS Production Reports</field>
         <field name="res_model">mrp.drs.production</field>
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- Sub-menu -->
     <menuitem id="menu_mrp_drs_production" name="Production Reports" parent="menu_mrp_drs_root"
               action="action_mrp_drs_production" sequence="1"/>
 </odoo>

@@ -1,93 +1,128 @@
 .o_drs_dashboard {
-    background: #f4f6fb; /* Exact modern soft SaaS background */
-    padding: 32px;
+    background: #f6f8fb;
+    padding: 30px;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #334155;
 }
 
-/* =========================================================
-   VERTICAL FLOATING CARDS (Matching Reference Image)
-   ========================================================= */
-.o_drs_dashboard .o_drs_kpi_card {
-    position: relative;
+/* Base Colors */
+.bg-purple { background-color: #8b5cf6 !important; }
+.bg-dark-blue { background-color: #4338ca !important; }
+.bg-orange { background-color: #f97316 !important; }
+.bg-orange-light { background-color: #ffedd5 !important; }
+.bg-purple-light { background-color: #f3e8ff !important; }
+.bg-dark-blue-light { background-color: #e0e7ff !important; }
+
+.text-purple { color: #8b5cf6 !important; }
+.text-dark-blue { color: #4338ca !important; }
+.text-orange { color: #f97316 !important; }
+.text-success { color: #10b981 !important; }
+.text-danger { color: #ef4444 !important; }
+
+/* 1. Vertical Metric Cards */
+.saas-v-card {
     background: #ffffff;
     border-radius: 20px;
-    padding: 24px 20px;
-    height: 100%;
-    min-height: 165px;
+    padding: 32px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 10px 30px 0 rgba(200, 205, 215, 0.3); /* Soft blurry SaaS shadow */
-    border: none;
-    transition: all 0.25s ease;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(210, 215, 230, 0.4);
+    transition: transform 0.2s;
+    height: 100%;
+}
+.saas-v-card:hover { transform: translateY(-4px); }
+
+.saas-v-card .icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    margin-bottom: 24px;
+}
+.saas-v-card .saas-label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.saas-v-card .saas-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 12px;
+}
+.saas-v-card .saas-trend {
+    font-size: 11px;
+    font-weight: 700;
 }
 
-.o_drs_dashboard .o_drs_kpi_card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px 0 rgba(180, 185, 200, 0.4);
+/* 2. Horizontal Detail Cards */
+.saas-h-card {
+    background: transparent;
+    padding: 10px;
 }
-
-/* Rounded Icon Box at Top of Card */
-.o_drs_dashboard .o_drs_kpi_card .o_drs_kpi_icon {
-    width: 44px;
-    height: 44px;
+.saas-h-card.active-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(210, 215, 230, 0.4);
+}
+.saas-subtext {
+    font-size: 11px;
+    line-height: 1.5;
+    max-width: 85%;
+}
+.h-icon-box {
+    width: 45px;
+    height: 45px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
-    margin-bottom: 12px;
+}
+.saas-btn {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border: 1px solid #e5e7eb;
 }
 
-.bg-purple-subtle { background-color: #f3e8ff !important; }
-.text-purple { color: #7c3aed !important; }
-
-.o_drs_dashboard .o_drs_kpi_card .o_drs_kpi_label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #94a3b8;
-    margin-bottom: 4px;
-}
-
-.o_drs_dashboard .o_drs_kpi_card .o_drs_kpi_value {
-    font-size: 26px;
-    font-weight: 800;
-    color: #1e1b4b;
-    line-height: 1.1;
-}
-
-.o_drs_dashboard .o_drs_kpi_card .o_drs_kpi_value .o_drs_kpi_unit {
-    font-size: 13px;
-    font-weight: 600;
-    color: #cbd5e1;
-    margin-left: 3px;
-}
-
-/* =========================================================
-   PANELS & CONTAINERS
-   ========================================================= */
-.o_drs_dashboard .o_drs_panel {
+/* 3. Main Chart Cards */
+.saas-chart-card {
     background: #ffffff;
-    border: none;
-    border-radius: 20px;
-    padding: 26px;
-    box-shadow: 0 10px 30px 0 rgba(200, 205, 215, 0.25);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(210, 215, 230, 0.4);
 }
 
-.o_drs_dashboard .o_drs_panel .o_drs_panel_title {
-    font-weight: 800;
-    color: #1e1b4b;
-    font-size: 16px;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f1f5f9;
+/* 4. Mini Stat Buttons */
+.saas-mini-stat {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 6px 20px rgba(210, 215, 230, 0.3);
+    font-size: 13px;
+    transition: transform 0.2s;
+}
+.saas-mini-stat:hover { transform: translateY(-3px); }
+
+/* Utilities */
+.o_drs_empty_state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
 }
 
-/* =========================================================
-   MISC UI ELEMENTS
-   ========================================================= */
-.o_drs_dashboard .active-tab {
+.active-tab {
     background-color: #ffffff !important;
     color: #1e1b4b !important;
     font-weight: 700;
@@ -95,11 +130,11 @@
     border-radius: 50rem !important;
 }
 
-.o_drs_dashboard .o_drs_live_status {
+.o_drs_live_status {
     display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 50rem;
     background: #ecfdf5; color: #059669; font-size: 11px; font-weight: 800;
 }
-.o_drs_dashboard .o_drs_live_status::before {
+.o_drs_live_status::before {
     content: ""; width: 7px; height: 7px; border-radius: 50%; background: #10b981; animation: drsLivePulse 2s infinite;
 }
 @keyframes drsLivePulse {
@@ -108,24 +143,55 @@
     100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-.o_drs_dashboard .machine_status_row {
+.machine_status_row {
     display: flex; align-items: center; padding: 14px; border: 1px solid #f1f5f9; border-radius: 12px; margin-bottom: 8px; background: #fafafa;
 }
-.o_drs_dashboard .machine_status_dot {
+.machine_status_dot {
     width: 9px; height: 9px; border-radius: 50%; background: #10b981; margin-right: 10px; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
-.o_drs_dashboard .o_drs_empty_state {
-    min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-}
-.o_drs_dashboard .o_drs_empty_state i { margin-bottom: 8px; font-size: 26px; color: #cbd5e1; }
-.o_drs_dashboard .o_drs_empty_state strong { color: #64748b; font-size: 13px; font-weight: 700; }
-.o_drs_dashboard .o_drs_empty_state span { margin-top: 2px; font-size: 11px; color: #94a3b8; }
+.o_drs_table thead th { font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; font-weight: 700; }
+.o_drs_table td { padding: 12px 8px; vertical-align: middle; border-bottom: 1px solid #f8fafc; color: #334155; }
 
-.o_drs_dashboard .o_drs_table thead th { font-size: 11px; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; font-weight: 700; }
-.o_drs_dashboard .o_drs_table td { padding: 12px 8px; vertical-align: middle; border-bottom: 1px solid #f8fafc; color: #334155; }
-
-.o_drs_dashboard .o_drs_loading_overlay {
+.o_drs_loading_overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+
+.o_drs_alert_banner {
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 12px;
+}
+.pulse-alert-icon {
+    animation: drsAlertPulse 1.5s infinite;
+}
+@keyframes drsAlertPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.machine_status_row.alert-border {
+    border-color: #fca5a5;
+    background-color: #fef2f2;
+}
+.machine_status_dot.alert {
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+    animation: drsLivePulseRed 1.5s infinite;
+}
+@keyframes drsLivePulseRed {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* INTERACTIVE ELEMENTS */
+.clickable {
+    cursor: pointer;
+}
+.clickable:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
 }

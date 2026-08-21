@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Add Role Checkboxes to the Employee Form -->
+    <!-- Add Role Checkboxes and Shift to the Employee Form -->
     <record id="view_employee_form_inherit_drs" model="ir.ui.view">
         <field name="name">hr.employee.form.inherit.drs</field>
         <field name="model">hr.employee</field>
@@ -10,6 +10,8 @@
                 <group>
                     <field name="is_drs_supervisor" widget="boolean_toggle"/>
                     <field name="is_drs_technician" widget="boolean_toggle"/>
+                    <!-- ADDED: The shift dropdown field -->
+                    <field name="drs_shift" invisible="not is_drs_supervisor and not is_drs_technician"/>
                 </group>
             </xpath>
         </field>
@@ -27,10 +29,11 @@
         <field name="tag">drs_technician_dashboard_action</field>
     </record>
 
-    <!-- Personnel Menus -->
+    <!-- Personnel Menus (Restricted to Supervisors & Managers) -->
     <menuitem id="menu_mrp_drs_personnel"
               name="Personnel Directory"
               parent="menu_mrp_drs_root"
+              groups="mrp_drs_production.group_drs_supervisor"
               sequence="15"/>
 
     <menuitem id="menu_drs_supervisors"

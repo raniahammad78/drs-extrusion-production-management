@@ -10,13 +10,17 @@ export class SupervisorDashboard extends Component {
         this.notification = useService("notification");
 
         this.state = useState({
-            supervisors: [],
+            shiftFirst: [],
+            shiftSecond: [],
+            shiftBoth: [],
+            unassignedData: null,
             activeTab: 'overview',
             newSup: {
                 name: '',
                 job_title: 'Production Supervisor',
                 work_email: '',
-                work_phone: ''
+                work_phone: '',
+                drs_shift: 'first' // Added default shift
             }
         });
 
@@ -26,11 +30,11 @@ export class SupervisorDashboard extends Component {
     }
 
     async fetchData() {
-        // Fetch ONLY employees flagged as Supervisors
+        // Fetch employees and include their assigned shift
         const employees = await this.orm.searchRead(
             "hr.employee",
             [["is_drs_supervisor", "=", true]],
-            ["id", "name"]
+            ["id", "name", "drs_shift"]
         );
 
         let supMap = {};
@@ -38,6 +42,7 @@ export class SupervisorDashboard extends Component {
             supMap[emp.id] = {
                 id: emp.id,
                 name: emp.name,
+                shift: emp.drs_shift || 'both', // default to both if missing
                 m311: { weight: 0, rolls: 0 },
                 m312: { weight: 0, rolls: 0 },
                 totalWeight: 0,
@@ -56,7 +61,7 @@ export class SupervisorDashboard extends Component {
         let hasUnassigned = false;
         let unassignedData = {
             id: 0,
-            name: 'Unassigned Work',
+            name: 'Unassigned Work Logs',
             m311: { weight: 0, rolls: 0 },
             m312: { weight: 0, rolls: 0 },
             totalWeight: 0,
@@ -80,7 +85,6 @@ export class SupervisorDashboard extends Component {
                     unassignedData.m312.rolls += rolls;
                 }
             } else if (supMap[supId]) {
-                // Only map data if the person is an active supervisor
                 supMap[supId].totalWeight += weight;
                 supMap[supId].totalRolls += rolls;
 
@@ -94,14 +98,22 @@ export class SupervisorDashboard extends Component {
             }
         }
 
-        let finalSupervisors = Object.values(supMap).sort((a, b) => {
-            if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight;
-            return a.name.localeCompare(b.name);
+        // Group into distinct arrays based on the shift
+        let first = [], second = [], both = [];
+
+        Object.values(supMap).forEach(sup => {
+            sup.totalWeight = Math.round(sup.totalWeight * 100) / 100;
+            if (sup.shift === 'first') first.push(sup);
+            else if (sup.shift === 'second') second.push(sup);
+            else both.push(sup);
         });
 
-        if (hasUnassigned) finalSupervisors.push(unassignedData);
+        const sortFunc = (a, b) => b.totalWeight - a.totalWeight || a.name.localeCompare(b.name);
 
-        this.state.supervisors = finalSupervisors;
+        this.state.shiftFirst = first.sort(sortFunc);
+        this.state.shiftSecond = second.sort(sortFunc);
+        this.state.shiftBoth = both.sort(sortFunc);
+        this.state.unassignedData = hasUnassigned ? unassignedData : null;
     }
 
     setTab(tabName) {
@@ -117,17 +129,17 @@ export class SupervisorDashboard extends Component {
         }
 
         try {
-            // Apply the 'is_drs_supervisor: true' flag automatically
             await this.orm.create("hr.employee", [{
                 name: this.state.newSup.name,
                 job_title: this.state.newSup.job_title,
                 work_email: this.state.newSup.work_email,
                 work_phone: this.state.newSup.work_phone,
+                drs_shift: this.state.newSup.drs_shift, // Save the selected shift
                 is_drs_supervisor: true
             }]);
 
             this.notification.add("New Supervisor added successfully!", { type: "success" });
-            this.state.newSup = { name: '', job_title: 'Production Supervisor', work_email: '', work_phone: '' };
+            this.state.newSup = { name: '', job_title: 'Production Supervisor', work_email: '', work_phone: '', drs_shift: 'first' };
 
             await this.fetchData();
             this.state.activeTab = 'overview';
@@ -143,7 +155,6 @@ export class SupervisorDashboard extends Component {
             name: 'Manage Supervisors',
             res_model: 'hr.employee',
             views: [[false, 'kanban'], [false, 'list'], [false, 'form']],
-            // Filter standard directory to ONLY show supervisors
             domain: [['is_drs_supervisor', '=', true]],
             context: { default_is_drs_supervisor: true }
         });

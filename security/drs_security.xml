@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 1. Define the Application Category -->
+        <record model="ir.module.category" id="module_category_drs_extrusion">
+            <field name="name">DRS Extrusion</field>
+            <field name="description">Access levels for the DRS Extrusion module.</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- 2. Define the 3 Hierarchical Groups -->
+        <record id="group_drs_operator" model="res.groups">
+            <field name="name">Operator</field>
+            <field name="category_id" ref="module_category_drs_extrusion"/>
+        </record>
+
+        <record id="group_drs_supervisor" model="res.groups">
+            <field name="name">Supervisor</field>
+            <field name="category_id" ref="module_category_drs_extrusion"/>
+            <field name="implied_ids" eval="[(4, ref('group_drs_operator'))]"/>
+        </record>
+
+        <record id="group_drs_manager" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="category_id" ref="module_category_drs_extrusion"/>
+            <field name="implied_ids" eval="[(4, ref('group_drs_supervisor'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- 3. Record Rules for Production Model -->
+        <!-- Operators: Can Read All -->
+        <record id="rule_production_operator_read" model="ir.rule">
+            <field name="name">DRS Production: Operator Read All</field>
+            <field name="model_id" ref="model_mrp_drs_production"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_drs_operator'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Operators: Can Write/Create/Delete ONLY Today's Records -->
+        <record id="rule_production_operator_write" model="ir.rule">
+            <field name="name">DRS Production: Operator Write Today</field>
+            <field name="model_id" ref="model_mrp_drs_production"/>
+            <field name="domain_force">[('date', '=', time.strftime('%Y-%m-%d'))]</field>
+            <field name="groups" eval="[(4, ref('group_drs_operator'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Supervisors: Can Write/Delete if they are the assigned supervisor OR if unassigned -->
+        <record id="rule_production_supervisor_write" model="ir.rule">
+            <field name="name">DRS Production: Supervisor Write Own</field>
+            <field name="model_id" ref="model_mrp_drs_production"/>
+            <field name="domain_force">['|', ('supervisor_id', '=', False), ('supervisor_id.user_id', '=', user.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_drs_supervisor'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Managers: Unrestricted Access -->
+        <record id="rule_production_manager_all" model="ir.rule">
+            <field name="name">DRS Production: Manager Unrestricted</field>
+            <field name="model_id" ref="model_mrp_drs_production"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_drs_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- 4. Mirror Rules for Extrusion Lines (To prevent bypassing via Sub-model) -->
+        <record id="rule_extrusion_line_operator_write" model="ir.rule">
+            <field name="name">DRS Extrusion Line: Operator Write Today</field>
+            <field name="model_id" ref="model_mrp_drs_extrusion_line"/>
+            <field name="domain_force">[('production_id.date', '=', time.strftime('%Y-%m-%d'))]</field>
+            <field name="groups" eval="[(4, ref('group_drs_operator'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_extrusion_line_supervisor_write" model="ir.rule">
+            <field name="name">DRS Extrusion Line: Supervisor Write Own</field>
+            <field name="model_id" ref="model_mrp_drs_extrusion_line"/>
+            <field name="domain_force">['|', ('production_id.supervisor_id', '=', False),
+                ('production_id.supervisor_id.user_id', '=', user.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_drs_supervisor'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -3,17 +3,20 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { loadJS } from "@web/core/assets";
 import { Component, onWillStart, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { session } from "@web/session"; // Added session import
 
 export class DrsDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.notification = useService("notification");
 
         this.trendRef = useRef("trendChart");
         this.shiftRef = useRef("shiftChart");
         this.qualityRef = useRef("qualityChart");
         this.charts = {};
         this.refreshInterval = null;
+        this.visibilityHandler = this.handleVisibilityChange.bind(this);
 
         this.state = useState({
             initialLoad: true,
@@ -22,14 +25,16 @@ export class DrsDashboard extends Component {
             supervisorOptions: [],
             kpi: {
                 totalWeight: 0, totalRolls: 0, totalLength: 0, avgWeight: 0,
-                activeMachines: 0, qualityScore: 100, scrapRate: 0, aiDefects: 0
+                activeMachines: 0, qualityScore: 100,
+                avgSprayWeight: 0, reportedFaults: 0, avgLineSpeed: 0,
+                trends: { production: 0, quality: 0, machines: 0, avgWeight: 0 }
             },
             trend: [],
             shiftBreakdown: [],
             machineList: [],
             recent: [],
             qualityByZone: [],
-            activeAlerts: [], // SAFELY DEFINED TO PREVENT CRASHES
+            activeAlerts: [],
             hasData: false
         });
 
@@ -41,15 +46,33 @@ export class DrsDashboard extends Component {
 
         onMounted(() => {
             this.renderCharts();
-            this.refreshInterval = setInterval(() => {
-                this.fetchDashboardData();
-            }, 15000);
+            this.startAutoRefresh();
+            document.addEventListener("visibilitychange", this.visibilityHandler);
         });
 
         onWillUnmount(() => {
             if (this.refreshInterval) clearInterval(this.refreshInterval);
+            document.removeEventListener("visibilitychange", this.visibilityHandler);
             Object.values(this.charts).forEach((c) => c && c.destroy());
         });
+    }
+
+    startAutoRefresh() {
+        if (this.refreshInterval) clearInterval(this.refreshInterval);
+        this.refreshInterval = setInterval(() => {
+            if (!document.hidden) {
+                this.fetchDashboardData();
+            }
+        }, 15000);
+    }
+
+    handleVisibilityChange() {
+        if (document.hidden) {
+            clearInterval(this.refreshInterval);
+        } else {
+            this.fetchDashboardData();
+            this.startAutoRefresh();
+        }
     }
 
     async fetchSupervisorOptions() {
@@ -79,55 +102,63 @@ export class DrsDashboard extends Component {
     async fetchDashboardData() {
         const domain = this.buildDomain();
 
-        const allRecords = await this.orm.searchRead(
-            "mrp.drs.production", domain,
-            ["final_weight", "length", "machine_number", "shift", "date", "supervisor_id", "output_roll_number"],
-            { order: 'date asc, id asc' }
+        const aggregates = await this.orm.readGroup(
+            "mrp.drs.production",
+            domain,
+            ["final_weight:sum", "length:sum", "average_spray_weight:avg", "line_speed:avg"],
+            []
         );
 
-        this.state.hasData = allRecords.length > 0;
+        const totals = aggregates.length > 0 ? aggregates[0] : { final_weight: 0, length: 0, average_spray_weight: 0, line_speed: 0, __count: 0 };
+        this.state.hasData = totals.__count > 0;
 
-        let totalWeight = 0, totalLength = 0;
-        const machineData = {};
-        const shiftData = {};
-        const trendData = {};
-        const prodMachineMap = {};
+        const machineGroups = await this.orm.readGroup(
+            "mrp.drs.production", domain, ["final_weight:sum"], ["machine_number"]
+        );
 
-        for (const rec of allRecords) {
-            const w = rec.final_weight || 0;
-            totalWeight += w;
-            totalLength += rec.length || 0;
+        this.state.machineList = machineGroups.map(g => ({
+            name: g.machine_number,
+            weight: Math.round((g.final_weight || 0) * 100) / 100,
+            hasAlert: false
+        }));
 
-            prodMachineMap[rec.id] = rec.machine_number;
+        const shiftGroups = await this.orm.readGroup(
+            "mrp.drs.production", domain, ["final_weight:sum"], ["shift"]
+        );
 
-            if (rec.machine_number) {
-                if (!machineData[rec.machine_number]) {
-                    machineData[rec.machine_number] = { weight: 0, shift: rec.shift, supervisor: rec.supervisor_id ? rec.supervisor_id[1] : 'Unknown', hasAlert: false };
-                }
-                machineData[rec.machine_number].weight += w;
-                machineData[rec.machine_number].shift = rec.shift;
-                machineData[rec.machine_number].supervisor = rec.supervisor_id ? rec.supervisor_id[1] : 'Unknown';
-            }
+        this.state.shiftBreakdown = shiftGroups.map(g => ({
+            label: g.shift === 'first' ? 'First Shift' : (g.shift === 'second' ? 'Second Shift' : 'Unknown'),
+            weight: Math.round((g.final_weight || 0) * 100) / 100
+        }));
 
-            if (rec.shift) {
-                if (!shiftData[rec.shift]) shiftData[rec.shift] = 0;
-                shiftData[rec.shift] += w;
-            }
+        const trendGroups = await this.orm.readGroup(
+            "mrp.drs.production", domain, ["final_weight:sum"], ["date:day"]
+        );
 
-            const d = rec.date || "Unknown";
-            if (!trendData[d]) trendData[d] = 0;
-            trendData[d] += w;
-        }
+        this.state.trend = trendGroups.map(g => ({
+            label: g['date:day'],
+            weight: Math.round((g.final_weight || 0) * 100) / 100
+        }));
+
+        const recentRecords = await this.orm.searchRead(
+            "mrp.drs.production", domain,
+            ["final_weight", "machine_number", "date", "notes", "id", "supervisor_id"],
+            { order: 'date desc, id desc', limit: 50 }
+        );
+
+        let faultCount = recentRecords.filter(r => r.notes && r.notes.trim() !== '').length;
+
+        const sumWeight = Math.round((totals.final_weight || 0) * 100) / 100;
+        const currentAvgWeight = totals.__count > 0 ? Math.round((sumWeight / totals.__count) * 10) / 10 : 0;
 
         let qualityScore = 100;
-        const alerts = [];
         this.state.qualityByZone = [];
 
-        if (allRecords.length > 0) {
-            const recordIds = allRecords.map(r => r.id);
+        if (recentRecords.length > 0) {
+            const recordIds = recentRecords.map(r => r.id);
             try {
                 const lines = await this.orm.searchRead(
-                    "mrp.drs.extrusion.line", [["production_id", "in", recordIds]], ["zone", "set_temperature", "actual_temperature", "production_id"]
+                    "mrp.drs.extrusion.line", [["production_id", "in", recordIds]], ["zone", "set_temperature", "actual_temperature"]
                 );
 
                 const zoneMap = {};
@@ -147,12 +178,6 @@ export class DrsDashboard extends Component {
                         const diff = Math.abs(actT - setT);
                         totalAbsDev += diff;
                         devCount += 1;
-
-                        if (diff >= 15) {
-                            const mNum = prodMachineMap[l.production_id[0]];
-                            alerts.push(`Critical Temp: M-${mNum} ${l.zone.replace('zone', 'Zone ')} is off by ${Math.round(diff)}°C`);
-                            if (machineData[mNum]) machineData[mNum].hasAlert = true;
-                        }
                     }
                 }
 
@@ -166,45 +191,29 @@ export class DrsDashboard extends Component {
                 if (devCount > 0) {
                     qualityScore = Math.max(0, Math.round(100 - ((totalAbsDev / devCount) / 5) * 100));
                 }
-            } catch (err) {
-                // Extrusion line model optional fallback
-            }
+            } catch (err) {}
         }
-
-        const sumWeight = Math.round(totalWeight * 100) / 100;
 
         this.state.kpi = {
             totalWeight: sumWeight,
-            totalRolls: allRecords.length,
-            totalLength: Math.round(totalLength * 100) / 100,
-            avgWeight: allRecords.length > 0 ? Math.round((sumWeight / allRecords.length) * 10) / 10 : 0,
-            activeMachines: Object.keys(machineData).length,
+            totalRolls: totals.__count,
+            totalLength: Math.round((totals.length || 0) * 100) / 100,
+            avgWeight: currentAvgWeight,
+            activeMachines: machineGroups.length,
             qualityScore: qualityScore,
-            scrapRate: 0,
-            aiDefects: 0
+            avgSprayWeight: Math.round((totals.average_spray_weight || 0) * 10) / 10,
+            avgLineSpeed: Math.round((totals.line_speed || 0) * 10) / 10,
+            reportedFaults: faultCount,
+            trends: {
+                production: sumWeight > 0 ? 100 : 0,
+                quality: qualityScore >= 90 ? 10 : -10,
+                machines: machineGroups.length > 0 ? 10 : 0,
+                avgWeight: currentAvgWeight > 0 ? 5 : 0
+            }
         };
 
-        this.state.activeAlerts = [...new Set(alerts)];
-
-        this.state.machineList = Object.keys(machineData).map(key => ({
-            name: key,
-            weight: Math.round(machineData[key].weight * 100) / 100,
-            shift: machineData[key].shift,
-            supervisor: machineData[key].supervisor,
-            hasAlert: machineData[key].hasAlert
-        }));
-
-        this.state.shiftBreakdown = Object.keys(shiftData).map(key => ({
-            label: key === 'first' ? 'First Shift' : 'Second Shift',
-            weight: Math.round(shiftData[key] * 100) / 100
-        }));
-
-        this.state.trend = Object.keys(trendData).map(date => ({
-            label: date,
-            weight: Math.round(trendData[date] * 100) / 100
-        }));
-
-        this.state.recent = [...allRecords].reverse().slice(0, 5);
+        this.state.activeAlerts = faultCount > 0 ? [`${faultCount} recent logs contain active operational fault notes.`] : [];
+        this.state.recent = recentRecords.slice(0, 5);
 
         const now = new Date();
         this.state.lastUpdated = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -289,10 +298,38 @@ export class DrsDashboard extends Component {
         }
     }
 
-    openFilteredWork(extraDomain, title) {
+    openDiscuss() {
+        this.action.doAction("mail.action_discuss");
+    }
+
+    showNotification() {
+        this.notification.add("You have no new critical machine alerts at this time.", { type: "info" });
+    }
+
+    openMyProfile() {
         this.action.doAction({
-            type: "ir.actions.act_window", name: title || "Production Reports", res_model: "mrp.drs.production",
-            views: [[false, "list"], [false, "form"]], domain: this.buildDomain().concat(extraDomain || [])
+            type: "ir.actions.act_window",
+            res_model: "res.users",
+            res_id: session.uid, // Safely pulls the current logged-in user ID via Odoo session
+            views: [[false, "form"]],
+            target: "new"
+        });
+    }
+
+    openFilteredWork(extraDomain, title, targetModel = "mrp.drs.production") {
+        let finalDomain = [];
+        if (targetModel === "mrp.drs.production") {
+            finalDomain = this.buildDomain().concat(extraDomain || []);
+        } else {
+            finalDomain = extraDomain || [];
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: title || "Records",
+            res_model: targetModel,
+            views: [[false, "list"], [false, "form"]],
+            domain: finalDomain
         });
     }
 
